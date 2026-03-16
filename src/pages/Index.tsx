@@ -9,6 +9,7 @@ import { VoiceSearchButton } from "@/components/chat/VoiceSearchButton";
 import { LanguageSelector } from "@/components/chat/LanguageSelector";
 import { QuickActionButtons } from "@/components/chat/QuickActionButtons";
 import { CartSidebar } from "@/components/chat/CartSidebar";
+import { HeroSection } from "@/components/chat/HeroSection";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Index() {
@@ -51,17 +52,17 @@ export default function Index() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-30">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <ShoppingBag className="w-4 h-4 text-primary-foreground" />
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+            <ShoppingBag className="w-4.5 h-4.5 text-primary" />
           </div>
           <div>
-            <h1 className="text-sm font-medium tracking-tight text-foreground">
-              Shopping Assistant
+            <h1 className="text-sm font-semibold tracking-tight text-foreground">
+              ShopAI
             </h1>
             <p className="text-[11px] text-muted-foreground">
-              Ask me anything about products
+              AI-Powered Shopping
             </p>
           </div>
         </div>
@@ -112,20 +113,7 @@ export default function Index() {
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-6">
           {messages.length === 0 && (
-            <div className="text-center py-12 space-y-6">
-              <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center mx-auto">
-                <ShoppingBag className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <div>
-                <h2 className="text-lg font-medium text-foreground">
-                  How can I help you shop today?
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Search products, manage your cart, or get recommendations
-                </p>
-              </div>
-              <QuickActionButtons onAction={handleQuickAction} disabled={isLoading} />
-            </div>
+            <HeroSection onAction={handleQuickAction} disabled={isLoading} />
           )}
 
           {messages.map((msg, i) => (
