@@ -52,17 +52,17 @@ export default function Index() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-30">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <ShoppingBag className="w-4 h-4 text-primary-foreground" />
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+            <ShoppingBag className="w-4.5 h-4.5 text-primary" />
           </div>
           <div>
-            <h1 className="text-sm font-medium tracking-tight text-foreground">
-              Shopping Assistant
+            <h1 className="text-sm font-semibold tracking-tight text-foreground">
+              ShopAI
             </h1>
             <p className="text-[11px] text-muted-foreground">
-              Ask me anything about products
+              AI-Powered Shopping
             </p>
           </div>
         </div>
