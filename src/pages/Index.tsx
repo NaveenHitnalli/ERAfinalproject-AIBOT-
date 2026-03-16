@@ -113,20 +113,7 @@ export default function Index() {
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-6">
           {messages.length === 0 && (
-            <div className="text-center py-12 space-y-6">
-              <div className="w-14 h-14 rounded-2xl bg-surface flex items-center justify-center mx-auto">
-                <ShoppingBag className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <div>
-                <h2 className="text-lg font-medium text-foreground">
-                  How can I help you shop today?
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Search products, manage your cart, or get recommendations
-                </p>
-              </div>
-              <QuickActionButtons onAction={handleQuickAction} disabled={isLoading} />
-            </div>
+            <HeroSection onAction={handleQuickAction} disabled={isLoading} />
           )}
 
           {messages.map((msg, i) => (
