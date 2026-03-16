@@ -1,0 +1,22 @@
+
+INSERT INTO public.products (name, description, price, category, brand, stock_count, image_url, rating, reviews_count) VALUES
+('MacBook Air M3', '15.3-inch Liquid Retina display, M3 chip, 8GB RAM, 256GB SSD', 124900, 'Laptops', 'Apple', 50, 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400', 4.7, 2340),
+('iPhone 15 Pro', '6.1-inch Super Retina XDR, A17 Pro chip, 128GB', 134900, 'Smartphones', 'Apple', 120, 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=400', 4.8, 5670),
+('Samsung Galaxy S24 Ultra', '6.8-inch QHD+ AMOLED, Snapdragon 8 Gen 3, 256GB', 129999, 'Smartphones', 'Samsung', 85, 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=400', 4.6, 3200),
+('Sony WH-1000XM5', 'Wireless noise cancelling headphones, 30hr battery', 29990, 'Audio', 'Sony', 200, 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=400', 4.8, 8900),
+('Dell XPS 15', '15.6-inch OLED 3.5K, Intel i7-13700H, 16GB RAM, 512GB SSD', 149990, 'Laptops', 'Dell', 35, 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=400', 4.5, 1890),
+('iPad Air M2', '11-inch Liquid Retina, M2 chip, 128GB WiFi', 69900, 'Tablets', 'Apple', 150, 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400', 4.7, 4230),
+('Samsung 65 QLED 4K TV', '65-inch QLED 4K Smart TV, Quantum Processor', 89990, 'TVs', 'Samsung', 40, 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=400', 4.4, 1560),
+('Nike Air Max 270', 'Men running shoes, Max Air unit, lightweight', 12995, 'Shoes', 'Nike', 300, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400', 4.3, 6780),
+('Dyson V15 Detect', 'Cordless vacuum cleaner, laser dust detection', 59990, 'Home Appliances', 'Dyson', 60, 'https://images.unsplash.com/photo-1558317374-067fb5f30001?w=400', 4.6, 2340),
+('Canon EOS R6 Mark II', 'Full-frame mirrorless camera, 24.2MP, 4K 60fps', 215990, 'Cameras', 'Canon', 25, 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400', 4.8, 890),
+('AirPods Pro 2', 'Active noise cancellation, Adaptive Audio, USB-C', 24900, 'Audio', 'Apple', 250, 'https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?w=400', 4.7, 12300),
+('Levis 511 Slim Fit Jeans', 'Men slim fit stretch denim, dark indigo', 3499, 'Clothing', 'Levis', 500, 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400', 4.2, 3400),
+('Samsung Galaxy Watch 6', '44mm, BioActive Sensor, Sleep Tracking', 28999, 'Wearables', 'Samsung', 100, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400', 4.4, 2100),
+('Kindle Paperwhite', '6.8-inch display, adjustable warm light, 16GB', 14999, 'E-Readers', 'Amazon', 180, 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=400', 4.6, 9800),
+('Boat Airdopes 141', 'TWS earbuds, 42hr playback, IPX4 water resistant', 1299, 'Audio', 'boAt', 800, 'https://images.unsplash.com/photo-1590658268037-6bf12f032f55?w=400', 4.1, 45000),
+('HP Pavilion Gaming Laptop', '15.6-inch FHD, Ryzen 5 5600H, RTX 3050, 8GB', 62990, 'Laptops', 'HP', 45, 'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=400', 4.3, 2800),
+('Adidas Ultraboost 23', 'Men running shoes, BOOST midsole, Primeknit upper', 16999, 'Shoes', 'Adidas', 200, 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400', 4.5, 5400),
+('LG 27 4K Monitor', '27-inch 4K UHD IPS, HDR10, USB-C, 60Hz', 32990, 'Monitors', 'LG', 70, 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=400', 4.4, 1200),
+('Instant Pot Duo 7-in-1', 'Electric pressure cooker, 6 Qt, 7 functions', 8999, 'Kitchen', 'Instant Pot', 150, 'https://images.unsplash.com/photo-1585515320310-259814833e62?w=400', 4.6, 15600),
+('Ray-Ban Aviator Classic', 'Gold frame, green classic G-15 lens', 8490, 'Accessories', 'Ray-Ban', 120, 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400', 4.5, 7800);
