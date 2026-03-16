@@ -9,6 +9,7 @@ import { VoiceSearchButton } from "@/components/chat/VoiceSearchButton";
 import { LanguageSelector } from "@/components/chat/LanguageSelector";
 import { QuickActionButtons } from "@/components/chat/QuickActionButtons";
 import { CartSidebar } from "@/components/chat/CartSidebar";
+import { HeroSection } from "@/components/chat/HeroSection";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Index() {
