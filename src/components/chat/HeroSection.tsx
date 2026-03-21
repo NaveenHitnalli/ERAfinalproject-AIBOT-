@@ -8,10 +8,10 @@ interface HeroSectionProps {
 }
 
 const features = [
-  { icon: Search, label: "Smart Search", desc: "Natural language product discovery" },
-  { icon: Sparkles, label: "AI Recommendations", desc: "Personalized suggestions" },
-  { icon: Mic, label: "Voice Search", desc: "Speak to find products" },
-  { icon: Globe, label: "15 Languages", desc: "Shop in your language" },
+  { icon: Search, label: "Smart Search", desc: "Natural language product discovery", action: "Search for trending products" },
+  { icon: Sparkles, label: "AI Recommendations", desc: "Personalized suggestions", action: "Recommend products for me" },
+  { icon: Mic, label: "Voice Search", desc: "Speak to find products", action: "" },
+  { icon: Globe, label: "15 Languages", desc: "Shop in your language", action: "" },
 ];
 
 export function HeroSection({ onAction, disabled }: HeroSectionProps) {
@@ -60,19 +60,22 @@ export function HeroSection({ onAction, disabled }: HeroSectionProps) {
         className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8 w-full max-w-xl"
       >
         {features.map((f, i) => (
-          <motion.div
+          <motion.button
             key={f.label}
+            type="button"
             initial={{ y: 12, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.35 + i * 0.08, duration: 0.4 }}
-            className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-surface border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-colors cursor-default"
+            onClick={() => f.action && !disabled && onAction(f.action)}
+            disabled={disabled || !f.action}
+            className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-card border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-colors cursor-pointer disabled:cursor-default disabled:opacity-70"
           >
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
               <f.icon className="w-4 h-4 text-primary" />
             </div>
             <span className="text-xs font-semibold text-foreground">{f.label}</span>
             <span className="text-[10px] text-muted-foreground text-center leading-tight">{f.desc}</span>
-          </motion.div>
+          </motion.button>
         ))}
       </motion.div>
 
