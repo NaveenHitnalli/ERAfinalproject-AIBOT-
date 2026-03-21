@@ -59,10 +59,10 @@ export default function Index() {
           </div>
           <div>
             <h1 className="text-sm font-semibold tracking-tight text-foreground">
-              ShopAI
+              StyleAI
             </h1>
             <p className="text-[11px] text-muted-foreground">
-              AI-Powered Shopping
+              AI Fashion Assistant
             </p>
           </div>
         </div>
