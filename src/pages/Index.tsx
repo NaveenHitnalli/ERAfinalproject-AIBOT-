@@ -167,7 +167,7 @@ export default function Index() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Search products, ask for recommendations..."
+              placeholder="Ask about dresses, outfits, compare prices..."
               className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none py-1.5"
               disabled={isLoading}
             />
