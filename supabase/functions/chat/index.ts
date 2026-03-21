@@ -13,6 +13,15 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+// ── Mock multi-platform data for comparison engine ──
+const MOCK_PLATFORMS: Record<string, { name: string; priceMultiplier: number; ratingOffset: number; deliveryDays: string }> = {
+  shopai: { name: "ShopAI Store", priceMultiplier: 1.0, ratingOffset: 0, deliveryDays: "2-4 days" },
+  meesho: { name: "Meesho", priceMultiplier: 0.85, ratingOffset: -0.2, deliveryDays: "5-7 days" },
+  ajio: { name: "AJIO", priceMultiplier: 1.1, ratingOffset: 0.1, deliveryDays: "3-5 days" },
+  hm: { name: "H&M", priceMultiplier: 1.25, ratingOffset: 0.3, deliveryDays: "4-6 days" },
+  flipkart: { name: "Flipkart", priceMultiplier: 0.95, ratingOffset: 0, deliveryDays: "2-3 days" },
+};
+
 const tools = [
   {
     type: "function",
@@ -38,14 +47,27 @@ const tools = [
   {
     type: "function",
     function: {
-      name: "get_cart",
-      description: "Get the current contents of the user's shopping cart",
+      name: "compare_products",
+      description:
+        "Compare a product across multiple shopping platforms (ShopAI, Meesho, AJIO, H&M, Flipkart). Use when user asks to compare prices, find best deals, or compare across brands/platforms.",
       parameters: {
         type: "object",
-        properties: {},
-        required: [],
+        properties: {
+          query: { type: "string", description: "Product search term to compare" },
+          category: { type: "string", description: "Optional category filter" },
+          max_results: { type: "number", description: "Max products to compare, default 3" },
+        },
+        required: ["query"],
         additionalProperties: false,
       },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_cart",
+      description: "Get the current contents of the user's shopping cart",
+      parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
     },
   },
   {
@@ -97,9 +119,10 @@ const tools = [
   },
 ];
 
+// ── Tool implementations ──
+
 async function searchProducts(params: Record<string, unknown>) {
   let query = supabase.from("products").select("*");
-
   if (params.query) {
     const q = String(params.query);
     query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%,brand.ilike.%${q}%`);
@@ -108,58 +131,84 @@ async function searchProducts(params: Record<string, unknown>) {
   if (params.brand) query = query.ilike("brand", `%${params.brand}%`);
   if (params.max_price) query = query.lte("price", params.max_price);
   if (params.min_price) query = query.gte("price", params.min_price);
-
   const limit = (params.limit as number) || 6;
   query = query.limit(limit).order("rating", { ascending: false });
-
   const { data, error } = await query;
   if (error) return { error: error.message };
   return { products: data, count: data?.length || 0 };
 }
 
+async function compareProducts(params: Record<string, unknown>) {
+  const q = String(params.query || "");
+  const maxResults = (params.max_results as number) || 3;
+
+  // Fetch base products from our DB
+  let query = supabase.from("products").select("*");
+  if (q) query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%,brand.ilike.%${q}%`);
+  if (params.category) query = query.ilike("category", `%${params.category}%`);
+  query = query.limit(maxResults).order("rating", { ascending: false });
+
+  const { data, error } = await query;
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "No products found to compare", comparisons: [] };
+
+  // Generate multi-platform comparison using mock data
+  const comparisons = data.map((product: Record<string, unknown>) => {
+    const basePrice = Number(product.price);
+    const baseRating = Number(product.rating || 4.0);
+
+    const platformPrices = Object.entries(MOCK_PLATFORMS).map(([key, platform]) => {
+      const price = Math.round(basePrice * platform.priceMultiplier);
+      const rating = Math.min(5, Math.max(1, +(baseRating + platform.ratingOffset).toFixed(1)));
+      return {
+        platform: platform.name,
+        platform_key: key,
+        price,
+        rating,
+        delivery: platform.deliveryDays,
+        in_stock: Math.random() > 0.15,
+        url: key === "shopai" ? null : `https://${key}.example.com/product/${product.id}`,
+      };
+    });
+
+    const bestPrice = Math.min(...platformPrices.map((p) => p.price));
+
+    return {
+      product_id: product.id,
+      name: product.name,
+      brand: product.brand,
+      category: product.category,
+      image_url: product.image_url,
+      description: product.description,
+      platforms: platformPrices,
+      best_price: bestPrice,
+      best_platform: platformPrices.find((p) => p.price === bestPrice)?.platform,
+      savings: Math.round(Math.max(...platformPrices.map((p) => p.price)) - bestPrice),
+    };
+  });
+
+  return { comparisons, query: q, platforms_checked: Object.keys(MOCK_PLATFORMS).length };
+}
+
 async function getOrCreateCart(userId: string) {
-  const { data: existing } = await supabase
-    .from("carts")
-    .select("id")
-    .eq("user_id", userId)
-    .maybeSingle();
-
+  const { data: existing } = await supabase.from("carts").select("id").eq("user_id", userId).maybeSingle();
   if (existing) return existing.id;
-
-  const { data: created, error } = await supabase
-    .from("carts")
-    .insert({ user_id: userId })
-    .select("id")
-    .single();
-
+  const { data: created, error } = await supabase.from("carts").insert({ user_id: userId }).select("id").single();
   if (error) throw new Error(error.message);
   return created.id;
 }
 
 async function getCart(userId: string) {
   const cartId = await getOrCreateCart(userId);
-
-  const { data: items, error } = await supabase
-    .from("cart_items")
-    .select("*, products(*)")
-    .eq("cart_id", cartId);
-
+  const { data: items, error } = await supabase.from("cart_items").select("*, products(*)").eq("cart_id", cartId);
   if (error) return { error: error.message };
-
   const totalPrice = items?.reduce(
-    (sum: number, item: { quantity: number; products: { price: number } }) =>
-      sum + item.quantity * item.products.price,
-    0
+    (sum: number, item: { quantity: number; products: { price: number } }) => sum + item.quantity * item.products.price, 0
   ) || 0;
-
   return {
     items: items?.map((item: { id: string; quantity: number; products: { id: string; name: string; price: number; image_url: string } }) => ({
-      id: item.id,
-      product_id: item.products.id,
-      name: item.products.name,
-      price: item.products.price,
-      quantity: item.quantity,
-      image_url: item.products.image_url,
+      id: item.id, product_id: item.products.id, name: item.products.name,
+      price: item.products.price, quantity: item.quantity, image_url: item.products.image_url,
       subtotal: item.quantity * item.products.price,
     })) || [],
     total_price: totalPrice,
@@ -169,65 +218,35 @@ async function getCart(userId: string) {
 
 async function addToCart(userId: string, productId: string, quantity = 1) {
   const cartId = await getOrCreateCart(userId);
-
-  // Check if item already in cart
-  const { data: existing } = await supabase
-    .from("cart_items")
-    .select("id, quantity")
-    .eq("cart_id", cartId)
-    .eq("product_id", productId)
-    .maybeSingle();
-
+  const { data: existing } = await supabase.from("cart_items").select("id, quantity").eq("cart_id", cartId).eq("product_id", productId).maybeSingle();
   if (existing) {
-    await supabase
-      .from("cart_items")
-      .update({ quantity: existing.quantity + quantity })
-      .eq("id", existing.id);
+    await supabase.from("cart_items").update({ quantity: existing.quantity + quantity }).eq("id", existing.id);
     return { success: true, message: `Updated quantity to ${existing.quantity + quantity}` };
   }
-
-  const { error } = await supabase
-    .from("cart_items")
-    .insert({ cart_id: cartId, product_id: productId, quantity });
-
+  const { error } = await supabase.from("cart_items").insert({ cart_id: cartId, product_id: productId, quantity });
   if (error) return { error: error.message };
   return { success: true, message: "Added to cart" };
 }
 
 async function removeFromCart(userId: string, productId: string) {
   const cartId = await getOrCreateCart(userId);
-
-  const { error } = await supabase
-    .from("cart_items")
-    .delete()
-    .eq("cart_id", cartId)
-    .eq("product_id", productId);
-
+  const { error } = await supabase.from("cart_items").delete().eq("cart_id", cartId).eq("product_id", productId);
   if (error) return { error: error.message };
   return { success: true, message: "Removed from cart" };
 }
 
 async function updateCartQuantity(userId: string, productId: string, quantity: number) {
+  if (quantity <= 0) return removeFromCart(userId, productId);
   const cartId = await getOrCreateCart(userId);
-
-  if (quantity <= 0) {
-    return removeFromCart(userId, productId);
-  }
-
-  const { error } = await supabase
-    .from("cart_items")
-    .update({ quantity })
-    .eq("cart_id", cartId)
-    .eq("product_id", productId);
-
+  const { error } = await supabase.from("cart_items").update({ quantity }).eq("cart_id", cartId).eq("product_id", productId);
   if (error) return { error: error.message };
   return { success: true, message: `Quantity updated to ${quantity}` };
 }
 
 async function executeTool(name: string, args: Record<string, unknown>, userId: string | null) {
   switch (name) {
-    case "search_products":
-      return searchProducts(args);
+    case "search_products": return searchProducts(args);
+    case "compare_products": return compareProducts(args);
     case "get_cart":
       if (!userId) return { error: "Please log in to view your cart" };
       return getCart(userId);
@@ -240,8 +259,7 @@ async function executeTool(name: string, args: Record<string, unknown>, userId: 
     case "update_cart_quantity":
       if (!userId) return { error: "Please log in to manage your cart" };
       return updateCartQuantity(userId, args.product_id as string, args.quantity as number);
-    default:
-      return { error: `Unknown tool: ${name}` };
+    default: return { error: `Unknown tool: ${name}` };
   }
 }
 
@@ -257,7 +275,6 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Extract user from auth header
     let userId: string | null = null;
     const authHeader = req.headers.get("authorization");
     if (authHeader) {
@@ -283,30 +300,32 @@ serve(async (req) => {
       es: "Respond in Spanish (Español). Keep product names in English.",
       fr: "Respond in French (Français). Keep product names in English.",
     };
-
     const langInstruction = languageInstructions[language] || languageInstructions.en;
 
-    const systemPrompt = `You are a helpful AI shopping assistant for an e-commerce store. ${langInstruction}
+    const systemPrompt = `You are ShopAI — an elite AI shopping assistant for a premium e-commerce store. ${langInstruction}
 
 Your capabilities:
 - Search and recommend products from our catalog
+- Compare products across 5 platforms (ShopAI, Meesho, AJIO, H&M, Flipkart) using the compare_products tool
 - Help users manage their shopping cart (add, remove, update quantities)
-- Provide product comparisons and recommendations
-- Answer questions about products, pricing, and availability
+- Provide outfit suggestions, fashion advice, and personalized recommendations
+- Answer questions about products, pricing, availability, and delivery
 
 Guidelines:
-- Be concise and helpful. Keep responses under 3 sentences unless comparing products.
-- When showing products, always use the search_products tool to get real data.
-- When displaying product results, format them clearly with names and prices.
+- Be concise and helpful. Keep responses under 3 sentences unless comparing products or giving recommendations.
+- When showing products, ALWAYS use the search_products tool to get real data.
+- When user asks to compare or find best deals, use the compare_products tool.
+- When displaying comparison results, format them as a clear comparison table with platform, price, rating, and delivery info.
 - Prices are in Indian Rupees (₹). Format as ₹X,XXX.
 - If user wants to add to cart, use the product's UUID from search results.
-- For product recommendations, consider the user's query context.
+- For outfit suggestions, search multiple categories and suggest combinations.
 - If user is not logged in and tries cart operations, politely ask them to log in.
-- Never make up products - always search the database.
-- Be proactive - if someone asks about a product, show them options.`;
+- Never make up products — always search the database.
+- Be proactive — if someone asks about a product, show them options.
+- When showing product results, format each product clearly with: name, brand, price, rating (as stars), and mention the product ID so user can add to cart.
+- For comparisons, highlight the BEST DEAL clearly.`;
 
-    // Non-streaming: use tool calling loop
-    let currentMessages = [
+    let currentMessages: Record<string, unknown>[] = [
       { role: "system", content: systemPrompt },
       ...messages,
     ];
@@ -333,15 +352,13 @@ Guidelines:
 
       if (!response.ok) {
         if (response.status === 429) {
-          return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          return new Response(JSON.stringify({ error: "Rate limit exceeded." }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
         if (response.status === 402) {
-          return new Response(JSON.stringify({ error: "Service credits exhausted. Please try again later." }), {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          return new Response(JSON.stringify({ error: "Service credits exhausted." }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
         const t = await response.text();
@@ -351,35 +368,28 @@ Guidelines:
 
       const data = await response.json();
       const choice = data.choices?.[0];
-
       if (!choice) throw new Error("No response from AI");
 
       const message = choice.message;
 
-      // If no tool calls, we have the final response
       if (!message.tool_calls || message.tool_calls.length === 0) {
         finalContent = message.content || "";
         break;
       }
 
-      // Process tool calls
       currentMessages.push(message);
 
-      const toolResults: Record<string, unknown>[] = [];
       for (const toolCall of message.tool_calls) {
         const args = JSON.parse(toolCall.function.arguments);
         const result = await executeTool(toolCall.function.name, args, userId);
-        toolResults.push(result as Record<string, unknown>);
-
         currentMessages.push({
           role: "tool",
           tool_call_id: toolCall.id,
           content: JSON.stringify(result),
-        } as { role: string; content: string; tool_call_id?: string });
+        });
       }
     }
 
-    // Return the final response with any product data embedded
     return new Response(
       JSON.stringify({ content: finalContent }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
