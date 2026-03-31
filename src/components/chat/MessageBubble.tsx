@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { User, Bot, ExternalLink, ShoppingCart } from "lucide-react";
-import { useState } from "react";
+import React, { useState, forwardRef } from "react";
 
 interface MessageBubbleProps {
   role: "user" | "assistant";
@@ -9,6 +9,48 @@ interface MessageBubbleProps {
 }
 
 const transition = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] };
+
+// Use forwardRef to avoid React warnings from ReactMarkdown
+const ProductImage = forwardRef<HTMLSpanElement, { src?: string; alt?: string }>(
+  function ProductImage({ src, alt }, ref) {
+    const [error, setError] = useState(false);
+    const [loaded, setLoaded] = useState(false);
+
+    const imgSrc = src || "";
+    const imgAlt = alt || "Product";
+
+    const getFallbackUrl = () => {
+      const terms = imgAlt.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).slice(0, 4).join(",");
+      return `https://source.unsplash.com/400x500/?${terms},fashion,clothing`;
+    };
+
+    // Use span instead of div to avoid DOM nesting issues (img inside p)
+    return (
+      <span ref={ref} className="block my-3 rounded-xl overflow-hidden border border-border bg-card shadow-sm max-w-[240px]">
+        {!loaded && (
+          <span className="flex w-full h-[200px] bg-muted animate-pulse items-center justify-center">
+            <ShoppingCart className="w-6 h-6 text-muted-foreground/30" />
+          </span>
+        )}
+        <img
+          src={error ? getFallbackUrl() : imgSrc}
+          alt={imgAlt}
+          className={`w-full h-[200px] object-cover ${loaded ? "block" : "hidden"}`}
+          loading="lazy"
+          onLoad={() => setLoaded(true)}
+          onError={() => {
+            if (!error) {
+              setError(true);
+              setLoaded(false);
+            } else {
+              setLoaded(true);
+            }
+          }}
+        />
+      </span>
+    );
+  }
+);
 
 export function MessageBubble({ role, content }: MessageBubbleProps) {
   const isUser = role === "user";
@@ -44,7 +86,7 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
           <div className="prose prose-sm prose-slate max-w-none [&_p]:leading-relaxed [&_p]:text-foreground [&_li]:text-foreground [&_strong]:text-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_a]:text-primary [&_a]:font-medium [&_hr]:border-border [&_table]:text-xs [&_th]:text-foreground [&_td]:text-foreground [&_th]:px-2 [&_td]:px-2 [&_th]:py-1.5 [&_td]:py-1.5 [&_table]:border-border [&_tr]:border-border">
             <ReactMarkdown
               components={{
-                img: ({ src, alt }) => <ProductImage src={src || ""} alt={alt || "Product"} />,
+                img: ProductImage as any,
                 a: ({ href, children }) => {
                   const text = String(children);
                   const isBuyLink = text.toLowerCase().includes("buy") || text.includes("→") || text.includes("🛒");
@@ -85,41 +127,5 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
         )}
       </div>
     </motion.div>
-  );
-}
-
-function ProductImage({ src, alt }: { src: string; alt: string }) {
-  const [error, setError] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-
-  // Generate a better fallback based on alt text
-  const getFallbackUrl = () => {
-    const terms = alt.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).slice(0, 4).join(",");
-    return `https://source.unsplash.com/400x500/?${terms},fashion,clothing`;
-  };
-
-  return (
-    <div className="my-3 rounded-xl overflow-hidden border border-border bg-card shadow-sm max-w-[240px]">
-      {!loaded && (
-        <div className="w-full h-[200px] bg-muted animate-pulse flex items-center justify-center">
-          <ShoppingCart className="w-6 h-6 text-muted-foreground/30" />
-        </div>
-      )}
-      <img
-        src={error ? getFallbackUrl() : src}
-        alt={alt}
-        className={`w-full h-[200px] object-cover ${loaded ? "block" : "hidden"}`}
-        loading="lazy"
-        onLoad={() => setLoaded(true)}
-        onError={() => {
-          if (!error) {
-            setError(true);
-            setLoaded(false);
-          } else {
-            setLoaded(true);
-          }
-        }}
-      />
-    </div>
   );
 }
