@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 
 interface Message {
   role: "user" | "assistant";
@@ -11,14 +11,15 @@ export function useChat(language: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const messagesRef = useRef<Message[]>([]);
+  messagesRef.current = messages;
 
   const sendMessage = useCallback(async (input: string) => {
     const userMsg: Message = { role: "user", content: input };
-    const newMessages = [...messages, userMsg];
+    const newMessages = [...messagesRef.current, userMsg];
     setMessages(newMessages);
     setIsLoading(true);
 
-    // Abort any previous stream
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -112,9 +113,8 @@ export function useChat(language: string) {
         }
       }
 
-      // If no content was streamed, add fallback
       if (!assistantContent) {
-        setMessages(prev => [...prev.filter(m => m.role !== "assistant" || m.content), { role: "assistant", content: "I'm sorry, I couldn't process that request. Please try again." }]);
+        setMessages(prev => [...prev, { role: "assistant", content: "I'm sorry, I couldn't process that request. Please try again." }]);
       }
     } catch (error: any) {
       if (error?.name === "AbortError") return;
@@ -127,7 +127,7 @@ export function useChat(language: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, language]);
+  }, [language]);
 
   const clearMessages = useCallback(() => {
     abortRef.current?.abort();
