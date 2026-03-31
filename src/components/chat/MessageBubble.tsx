@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
-import { User, Bot, ExternalLink } from "lucide-react";
+import { User, Bot, ExternalLink, ShoppingCart } from "lucide-react";
+import { useState } from "react";
 
 interface MessageBubbleProps {
   role: "user" | "assistant";
@@ -40,32 +41,41 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
         {isUser ? (
           <p className="text-sm leading-relaxed">{content}</p>
         ) : (
-          <div className="prose prose-sm prose-slate max-w-none [&_p]:leading-relaxed [&_p]:text-foreground [&_li]:text-foreground [&_strong]:text-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_a]:text-primary [&_a]:font-medium [&_a]:no-underline hover:[&_a]:underline [&_hr]:border-border [&_table]:text-foreground [&_th]:text-foreground [&_td]:text-foreground">
+          <div className="prose prose-sm prose-slate max-w-none [&_p]:leading-relaxed [&_p]:text-foreground [&_li]:text-foreground [&_strong]:text-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_a]:text-primary [&_a]:font-medium [&_hr]:border-border [&_table]:text-xs [&_th]:text-foreground [&_td]:text-foreground [&_th]:px-2 [&_td]:px-2 [&_th]:py-1.5 [&_td]:py-1.5 [&_table]:border-border [&_tr]:border-border">
             <ReactMarkdown
               components={{
-                img: ({ src, alt }) => (
-                  <div className="my-3 rounded-xl overflow-hidden border border-border bg-card shadow-sm max-w-[260px]">
-                    <img
-                      src={src}
-                      alt={alt || "Product"}
-                      className="w-full h-[200px] object-cover"
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300&h=400&fit=crop";
-                      }}
-                    />
+                img: ({ src, alt }) => <ProductImage src={src || ""} alt={alt || "Product"} />,
+                a: ({ href, children }) => {
+                  const text = String(children);
+                  const isBuyLink = text.toLowerCase().includes("buy") || text.includes("→") || text.includes("🛒");
+                  
+                  return (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex items-center gap-1.5 no-underline transition-colors text-xs font-medium rounded-lg px-3 py-1.5 ${
+                        isBuyLink
+                          ? "bg-primary text-primary-foreground hover:opacity-90"
+                          : "bg-primary/10 text-primary hover:bg-primary/20"
+                      }`}
+                    >
+                      {isBuyLink && <ShoppingCart className="w-3 h-3" />}
+                      {children}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  );
+                },
+                table: ({ children }) => (
+                  <div className="overflow-x-auto my-3 rounded-lg border border-border">
+                    <table className="w-full text-xs">{children}</table>
                   </div>
                 ),
-                a: ({ href, children }) => (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-primary font-medium bg-primary/10 px-3 py-1.5 rounded-lg text-xs hover:bg-primary/20 transition-colors no-underline"
-                  >
-                    {children}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                th: ({ children }) => (
+                  <th className="bg-muted/50 text-foreground font-semibold text-left px-3 py-2 border-b border-border">{children}</th>
+                ),
+                td: ({ children }) => (
+                  <td className="px-3 py-2 border-b border-border/50">{children}</td>
                 ),
               }}
             >
@@ -75,5 +85,41 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
         )}
       </div>
     </motion.div>
+  );
+}
+
+function ProductImage({ src, alt }: { src: string; alt: string }) {
+  const [error, setError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  // Generate a better fallback based on alt text
+  const getFallbackUrl = () => {
+    const terms = alt.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).slice(0, 4).join(",");
+    return `https://source.unsplash.com/400x500/?${terms},fashion,clothing`;
+  };
+
+  return (
+    <div className="my-3 rounded-xl overflow-hidden border border-border bg-card shadow-sm max-w-[240px]">
+      {!loaded && (
+        <div className="w-full h-[200px] bg-muted animate-pulse flex items-center justify-center">
+          <ShoppingCart className="w-6 h-6 text-muted-foreground/30" />
+        </div>
+      )}
+      <img
+        src={error ? getFallbackUrl() : src}
+        alt={alt}
+        className={`w-full h-[200px] object-cover ${loaded ? "block" : "hidden"}`}
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          if (!error) {
+            setError(true);
+            setLoaded(false);
+          } else {
+            setLoaded(true);
+          }
+        }}
+      />
+    </div>
   );
 }
